@@ -88,12 +88,15 @@ void *lista_borrar_primero(lista_t *lista) {
 }
 
 void *lista_ver_primero(const lista_t *lista) {
+    if (lista->primero == NULL) return NULL;
     return lista->primero->dato;
 }
 
-void *lista_ver_ultimo(const lista_t* lista) {
+void *lista_ver_ultimo(const lista_t *lista) {
+    if (lista->ultimo == NULL) return NULL;
     return lista->ultimo->dato;
 }
+
 size_t lista_largo(const lista_t *lista) {
     return lista->largo;
 }
