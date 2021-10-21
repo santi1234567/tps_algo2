@@ -101,7 +101,8 @@ size_t lista_largo(const lista_t *lista) {
 void lista_destruir(lista_t *lista, void (*destruir_dato)(void *)) {
     while (lista->primero != NULL) {
         nodo_t *aux = lista->primero;
-        destruir_dato(aux->dato);
+        if (destruir_dato)
+            destruir_dato(aux->dato);
         lista->primero = aux->prox;
         free(aux);
     }
@@ -109,7 +110,7 @@ void lista_destruir(lista_t *lista, void (*destruir_dato)(void *)) {
 }
 
 void lista_iterar(lista_t *lista, bool visitar(void *dato, void *extra), void *extra) {
-	if(lista_esta_vacia(lista))
+	if(lista_esta_vacia(lista) || visitar == NULL)
 		return;
 	nodo_t *nodo = lista->primero;
 	while (visitar(nodo->dato, extra)) {
@@ -122,12 +123,11 @@ void lista_iterar(lista_t *lista, bool visitar(void *dato, void *extra), void *e
 
 // Primitivas Iterador
 
-// Crea un iterador externo
-// Pre: La lista fue creada
-// Post: Devuelve un nuevo iterador externo o NULL en caso de que falle
 lista_iter_t *lista_iter_crear(lista_t *lista) {
-    lista_iter_t *iter = malloc(sizeof(lista_iter_t));
-    if (lista == NULL)
+	if (lista == NULL)
+		return NULL;
+	lista_iter_t *iter = malloc(sizeof(lista_iter_t));
+    if (iter == NULL)
         return NULL;
     iter->lista = lista;
     iter->act = lista->primero;
@@ -135,9 +135,6 @@ lista_iter_t *lista_iter_crear(lista_t *lista) {
     return iter;
 }
 
-// Avanza al siguiente elemento de la lista
-// Pre: El iterador fue creado
-// Post: Devuelve true si se pudo avanzar correctamente y false si se llegó al final
 bool lista_iter_avanzar(lista_iter_t *iter) {
     if (lista_iter_al_final(iter))
         return false;
@@ -147,29 +144,18 @@ bool lista_iter_avanzar(lista_iter_t *iter) {
     return true;
 }
 
-// Devuelve el dato del elemento sobre el que está parado el iterador o NULL si está al final
-// Pre: El iterador fue creado
 void *lista_iter_ver_actual(const lista_iter_t *iter) {
     return lista_iter_al_final(iter) ? NULL : iter->act->dato;
 }
 
-// Devuelve true si el iterador se encuentra al final de la lista, false en el caso contrario.
-// Pre: El iterador fue creado
 bool lista_iter_al_final(const lista_iter_t *iter) {
     return iter->act == NULL;
 }
 
-// Destruye el Iterador.
-// Pre: El iterador fue creado
-// Post: El iterador fue destruido
 void lista_iter_destruir(lista_iter_t *iter) {
     free(iter);
 }
 
-// Inserta el dato en la lista en la posición del iterador. Devuelve true si la operación
-// se realizó correctamente y false si falló.
-// Pre: El iterador fue creado
-// Post: Se insertó en la lista el dato
 bool lista_iter_insertar(lista_iter_t *iter, void *dato) {
     if(lista_iter_al_final(iter)) {
         if(!lista_insertar_ultimo(iter->lista, dato))
@@ -196,9 +182,6 @@ bool lista_iter_insertar(lista_iter_t *iter, void *dato) {
 	return true;
 }
 
-// Elimina el dato de la lista en la posición del iterador.
-// Pre: El iterador fue creado
-// Post: Se eliminó de la lista el dato
 void *lista_iter_borrar(lista_iter_t *iter) {
 	if(lista_iter_al_final(iter))
 		return NULL;
@@ -212,6 +195,7 @@ void *lista_iter_borrar(lista_iter_t *iter) {
 	    iter->act = NULL;
 	    destruir_nodo(aux);
 	    iter->lista->largo --;
+
 		return dato;
 	}
 	if(iter->ant == NULL) {
