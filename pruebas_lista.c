@@ -14,7 +14,7 @@ void prueba_iter_volumen() {
     int datos1[CANT_PRUEBA_VOLUMEN];
 	for (i = 0; i < CANT_PRUEBA_VOLUMEN; i++) {
         datos1[i] = i;
-        if(!lista_iter_insertar(iter, &datos1[i])) {
+        if(!lista_iter_insertar(iter, &datos1[i]) || lista_largo(lista) != i+1) {
 			estado=false;
 			break;
 		}
@@ -22,7 +22,9 @@ void prueba_iter_volumen() {
 	print_test("\titer insertar muchos elementos",estado);
 	estado = true;
 	for (i = 0; i < CANT_PRUEBA_VOLUMEN; i++) {
-        if(*(int*)lista_iter_ver_actual(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1] || *(int*)lista_iter_borrar(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]) {
+        if(*(int*)lista_iter_ver_actual(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]
+		 		|| lista_largo(lista) != CANT_PRUEBA_VOLUMEN-i
+						|| *(int*)lista_iter_borrar(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]) {
 			estado = false;
 			break;
 		}
@@ -30,7 +32,7 @@ void prueba_iter_volumen() {
 	print_test("\tInvariante iter borrar desde el primero", estado);
 	estado = true;
 	for (i = 0; i < CANT_PRUEBA_VOLUMEN; i++) {
-        if(!lista_iter_insertar(iter, &datos1[i])) {
+        if(!lista_iter_insertar(iter, &datos1[i]) || lista_largo(lista) != i+1) {
 			estado = false;
 			break;
 		}
@@ -46,7 +48,9 @@ void prueba_iter_volumen() {
 	print_test("\titer avanzar a la mitad", estado);
 	estado = true;
 	for (i = CANT_PRUEBA_VOLUMEN/2; i < CANT_PRUEBA_VOLUMEN; i++) {
-		if(*(int*)lista_iter_ver_actual(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1] || *(int*)lista_iter_borrar(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]) {
+		if(*(int*)lista_iter_ver_actual(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]
+			|| lista_largo(lista) != CANT_PRUEBA_VOLUMEN-i+CANT_PRUEBA_VOLUMEN/2
+			 	||*(int*)lista_iter_borrar(iter) != datos1[CANT_PRUEBA_VOLUMEN-i-1]) {
 			estado = false;
 			break;
 		}
@@ -117,15 +121,18 @@ void prueba_iter_insertar()	{
 	}
 	iter = lista_iter_crear(lista);
 	int dato = 4;
+	print_test("\tlista largo = 4", lista_largo(lista) == 4);
 	print_test("\titer insertar 4 al principio != false", lista_iter_insertar(iter, &dato));
 	print_test("\titer ver actual = 4", *(int*)lista_iter_ver_actual(iter) == 4);
 	print_test("\tlista ver primero = 4", *(int*)lista_ver_primero(lista) == 4);
-
+	print_test("\tlista largo = 5", lista_largo(lista) == 5);
 	print_test("\titer avanzar", lista_iter_avanzar(iter));
 	print_test("\titer ver actual = 3", *(int*)lista_iter_ver_actual(iter) == 3);
 
 	double dato2 = 3.5;
 	print_test("\titer insertar 3.5 al medio != false", lista_iter_insertar(iter, &dato2));
+	print_test("\tlista largo = 6", lista_largo(lista) == 6);
+
 	print_test("\titer ver actual = 3.5", *(double*)lista_iter_ver_actual(iter) == 3.5);
 	print_test("\titer avanzar", lista_iter_avanzar(iter));
 	print_test("\titer avanzar", lista_iter_avanzar(iter));
@@ -137,9 +144,10 @@ void prueba_iter_insertar()	{
 
 	dato = -1;
 	print_test("\titer insertar -1 al final != false", lista_iter_insertar(iter, &dato));
+	print_test("\tlista largo = 7", lista_largo(lista) == 7);
+
 	print_test("\titer ver actual = -1", *(int*)lista_iter_ver_actual(iter) == -1);
 	print_test("\tlista ver ultimo = -1", *(int*)lista_ver_ultimo(lista) == -1);
-
 	lista_destruir(lista, NULL);
 
 	lista_iter_destruir(iter);
@@ -160,20 +168,38 @@ void prueba_iter_borrar() {
 		lista_insertar_primero(lista, &valores[i]);
 	}
 	iter = lista_iter_crear(lista);
+	print_test("\tLargo lista es 4", lista_largo(lista) == 4);
 	print_test("\titer borrar primer elemento (3)",*(int*)lista_iter_borrar(iter)==3);
+	print_test("\tLargo lista es 3", lista_largo(lista) == 3);
 	print_test("\titer ver actual = 2", *(int*)lista_iter_ver_actual(iter) == 2);
 	print_test("\tlista ver primero = 2", *(int*)lista_ver_primero(lista) == 2);
 	print_test("\titer avanzar", lista_iter_avanzar(iter));
 	print_test("\titer ver actual = 1", *(int*)lista_iter_ver_actual(iter) == 1);
 	print_test("\titer borrar en el medio (1)",*(int*)lista_iter_borrar(iter)==1);
+	print_test("\tLargo lista es 2", lista_largo(lista) == 2);
 	print_test("\titer ver actual = 0", *(int*)lista_iter_ver_actual(iter) == 0);
 	print_test("\titer borrar el ultimo (0)",*(int*)lista_iter_borrar(iter)==0);
+	print_test("\tLargo lista es 1", lista_largo(lista) == 1);
 	print_test("\titer ver actual = NULL", lista_iter_ver_actual(iter) == NULL);
 	print_test("\titer esta al final", lista_iter_al_final(iter));
 	print_test("\tlista ver ultimo = 2", *(int*)lista_ver_ultimo(lista) == 2);
-	lista_destruir(lista, NULL);
 	lista_iter_destruir(iter);
 	print_test("\titer destruir", true);
+	iter = lista_iter_crear(lista);
+	print_test("\titer resetear", iter != NULL);
+
+	print_test("\titer borrar (2)",*(int*)lista_iter_borrar(iter)==2);
+	print_test("\titer borrar lista vacia",lista_iter_borrar(iter)== NULL);
+	print_test("\titer avanzar en al final", !lista_iter_avanzar(iter));
+	print_test("\tlista esta vacia", lista_esta_vacia(lista));
+	print_test("\tlista largo 0", lista_largo(lista)==0);
+	print_test("\tlista ver primero NULL", lista_ver_primero(lista)==NULL);
+
+	print_test("\tlista ver ultimo NULL", lista_ver_ultimo(lista)==NULL);
+
+	lista_destruir(lista, NULL);
+	lista_iter_destruir(iter);
+
 }
 
 
@@ -332,7 +358,7 @@ void pruebas_lista_estudiante() {
     prueba_lista_vacia();
     prueba_lista_null();
     prueba_volumen();
-    pruebas_de_iterador_interno(); 
+    pruebas_de_iterador_interno();
     prueba_iter_crear_destruir();
     prueba_iter_insertar();
 	prueba_iter_borrar();

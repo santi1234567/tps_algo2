@@ -182,6 +182,7 @@ bool lista_iter_insertar(lista_iter_t *iter, void *dato) {
 	nodo->prox = iter->act;
 	iter->ant->prox = nodo;
 	iter->act = nodo;
+	iter->lista->largo++;
 	return true;
 }
 
@@ -189,6 +190,15 @@ void *lista_iter_borrar(lista_iter_t *iter) {
 	if(lista_iter_al_final(iter))
 		return NULL;
 	void *dato;
+	if(iter->ant == NULL) {
+		dato = lista_borrar_primero(iter->lista);
+		if(dato == NULL)
+		return NULL;
+		else {
+			iter->act = iter->lista->primero;
+			return dato;
+		}
+	}
 	if(iter->act == iter->lista->ultimo) {
 	    nodo_t *aux = iter->lista->ultimo;
 		dato = aux->dato;
@@ -196,24 +206,15 @@ void *lista_iter_borrar(lista_iter_t *iter) {
 	    if(iter->ant != NULL)
 	        iter->lista->ultimo->prox = NULL;
 	    iter->act = NULL;
+		iter->lista->largo --;
 	    destruir_nodo(aux);
-	    iter->lista->largo --;
-
 		return dato;
-	}
-	if(iter->ant == NULL) {
-		dato = lista_borrar_primero(iter->lista);
-		if(dato == NULL)
-			return NULL;
-		else {
-			iter->act = iter->lista->primero;
-			return dato;
-		}
 	}
 	dato = iter->act->dato;
 	nodo_t *aux = iter->act->prox;
 	destruir_nodo(iter->act);
 	iter->act = aux;
 	iter->ant->prox = aux;
+	iter->lista->largo --;
 	return dato;
 }
