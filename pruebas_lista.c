@@ -258,6 +258,8 @@ void prueba_lista_vacia() {
     print_test("\tBorrar primero es NULL", !lista_borrar_primero(lista));
     print_test("\tLargo es 0", !lista_largo(lista));
     print_test("\tLista esta vacía es true", lista_esta_vacia(lista));
+    print_test("\tLista ver primero es inválido", !lista_ver_primero(lista));
+    print_test("\tLista ver ultimo es inválido", !lista_ver_ultimo(lista));
     lista_destruir(lista, NULL);
 }
 
