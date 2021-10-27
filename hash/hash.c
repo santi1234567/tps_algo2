@@ -144,10 +144,7 @@ void *hash_borrar(hash_t *hash, const char *clave) {
         lista_iter_destruir(iter);
         return NULL;
     }
-
     void *dato = nodo->dato;
-    if (hash->destruir_dato)
-        hash->destruir_dato(nodo->dato);
     free(nodo->clave);
     free(nodo);
     lista_iter_borrar(iter);
