@@ -47,7 +47,7 @@ abb_t *abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
     return arbol;
 }
 
-bool abb_guardar_rec(abb_nodo_t **nodo, const char *clave, void *dato, abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
+static bool abb_guardar_rec(abb_nodo_t **nodo, const char *clave, void *dato, abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
 	if (!(*nodo)) {
 		(*nodo) = abb_nodo_crear(clave, dato);
 		return ((*nodo));
@@ -73,7 +73,7 @@ bool abb_guardar(abb_t *arbol, const char *clave, void *dato) {
 }
 
 
-void *abb_borrar_rec(abb_nodo_t **padre, abb_nodo_t **nodo, const char *clave, abb_comparar_clave_t cmp) {
+static void *abb_borrar_rec(abb_nodo_t **padre, abb_nodo_t **nodo, const char *clave, abb_comparar_clave_t cmp) {
 	if (!*nodo) return NULL;
 	abb_nodo_t *hijo;
 	if (!cmp(clave, (*nodo)->clave)) { // las claves son iguales
@@ -109,7 +109,7 @@ void *abb_borrar_rec(abb_nodo_t **padre, abb_nodo_t **nodo, const char *clave, a
         reemplazo = reemplazo->der;
     }
 
-    char *clave_reemplazo = malloc(sizeof(strlen(reemplazo->clave)+1));
+    char *clave_reemplazo = malloc(sizeof(char)*(strlen(reemplazo->clave)+1));
     if (!clave_reemplazo) return NULL;
     strcpy(clave_reemplazo, reemplazo->clave);
     void *dato = abb_borrar_rec(&reemplazo_padre, &reemplazo, reemplazo->clave, cmp);
@@ -127,35 +127,6 @@ void *abb_borrar_rec(abb_nodo_t **padre, abb_nodo_t **nodo, const char *clave, a
 
 void *abb_borrar(abb_t *arbol, const char *clave) {
 	return abb_borrar_rec(NULL, &arbol->raiz, clave, arbol->cmp);
-}
-
-
-
-abb_nodo_t *max_padre_izquierda(abb_nodo_t *nodo) {
-    abb_nodo_t *max = nodo->izq;
-    while (max->der) {
-        max = max->der;
-    }
-    return max;
-}
-void *abb_borrar_2_hijos(abb_nodo_t *padre, abb_nodo_t *nodo, const char *clave, abb_comparar_clave_t cmp) {
-    if (!nodo) return NULL;
-    abb_nodo_t *reemplazo_padre = nodo;
-    abb_nodo_t *reemplazo = nodo->izq;
-    while(reemplazo->der) {
-        reemplazo_padre = reemplazo;
-        reemplazo = reemplazo->der;
-    }
-
-    char *clave_reemplazo = malloc(sizeof(strlen(reemplazo->clave)+1));
-    if (!clave_reemplazo) return NULL;
-    strcpy(clave_reemplazo, reemplazo->clave);
-    void *dato = abb_borrar_rec(&reemplazo_padre, &reemplazo, reemplazo->clave, cmp);
-    free(nodo->clave);
-    nodo->clave = clave_reemplazo;
-    void *aux = nodo->dato;
-    nodo->dato = dato;
-    return aux;
 }
 
 
@@ -198,7 +169,7 @@ size_t abb_cantidad(const abb_t *arbol) {
 	return (arbol->raiz) ? abb_cantidad_rec(arbol->raiz) : 0;
 }
 
-void abb_destruir_rec(abb_nodo_t ** nodo, abb_destruir_dato_t destruir_dato) {
+static void abb_destruir_rec(abb_nodo_t ** nodo, abb_destruir_dato_t destruir_dato) {
     if(!*nodo) return;
     abb_destruir_rec(&((*nodo)->izq), destruir_dato);
     abb_destruir_rec(&((*nodo)->der), destruir_dato);
@@ -267,6 +238,7 @@ abb_iter_t *abb_iter_in_crear(const abb_t *arbol) {
 bool abb_iter_in_avanzar(abb_iter_t *iter) {
     if (abb_iter_in_al_final(iter)) return false;
     abb_nodo_t *nodo = pila_desapilar(iter->pila);
+    if(!nodo) return false;
     if (nodo->der) {
         pila_apilar(iter->pila, nodo->der);
         nodo = nodo->der;
