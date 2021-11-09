@@ -225,6 +225,7 @@ abb_iter_t *abb_iter_in_crear(const abb_t *arbol) {
         free(iter);
         return NULL;
     }
+    if(!arbol->raiz) return iter;
     pila_apilar(iter->pila, arbol->raiz);
     if (!arbol->raiz) return iter;
     abb_nodo_t *nodo = arbol->raiz->izq;
