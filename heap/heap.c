@@ -26,6 +26,17 @@ static bool heap_redimensionar(heap_t *heap, size_t nueva_capacidad);
 static size_t max(void *elementos[], size_t pos_x, size_t pos_y, cmp_func_t cmp) {
  	return (cmp(elementos[pos_x], elementos[pos_y]) < 0) ? pos_y : pos_x;
 }
+/*
+static bool heap_es_heap(void *elementos[], size_t cant, cmp_func_t cmp) {
+	bool ok;
+	for (size_t i = cant-1; i > 0; i--) {
+		ok = cmp(elementos[i], elementos[(i-1)/2]) <= 0;
+		if (!ok) {
+			return false;
+		}
+	}
+	return true;
+}*/
 
 static void heapify(void *elementos[], size_t cant, cmp_func_t cmp) {
 	for (size_t i = 0; i < cant; i++) {
@@ -41,8 +52,8 @@ static void heapify(void *elementos[], size_t cant, cmp_func_t cmp) {
 void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp) {
 	heapify(elementos, cant, cmp);
 	for (size_t i = 0; i < cant; i++) {
-		swap(elementos[0], elementos[cant-i-1]);
-		heap_downheap(elementos, cant-i, 0, cmp);
+		swap(&elementos[0], &elementos[cant-i-1]);
+		heap_downheap(elementos, cant-i-1	, 0, cmp);
 	}
 }
 
@@ -141,30 +152,41 @@ void *heap_ver_max(const heap_t *heap) {
 	return (heap->cantidad>0) ? heap->elementos[0] : NULL;
 }
 
-
+/*
 
 static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
-	printf("Pos Padre es %lu\n",padre );
 	if (2*padre+1 < tam) { //caso base para las hojas
 		size_t hijo_izq = 2*padre+1;
 		size_t hijo_der = 2*padre+2;
-		printf("Pos hijo izq es %lu, Pos hijo der es %lu, cantidad es %lu\n",hijo_izq, hijo_der, tam );
 		size_t hijo_max;
 		if (hijo_der == tam) { // si no tiene hijo derecho
 			hijo_max = hijo_izq;
 		} else {
 			hijo_max = max(elementos, hijo_izq, hijo_der, cmp);
 		}
-		printf("Padre es %i, Hijo max es %i\n", *(int *)elementos[padre],*(int *)elementos[hijo_max] );
-		if (cmp(elementos[padre], elementos[hijo_max]) < 0) { 
+		if (cmp(elementos[padre], elementos[hijo_max]) < 0) {
 			swap(&elementos[padre], &elementos[hijo_max]);
 		}
-		printf("Nuevo Padre es %i, Nuevo Hijo max es %i\n", *(int *)elementos[padre],*(int *)elementos[hijo_max] );
-
 		heap_downheap(elementos, tam, hijo_max, cmp);
 	}
 }
-
+*/
+static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
+	if (2*padre+1 < tam) { //caso base para las hojas
+		size_t hijo_izq = 2*padre+1;
+		size_t hijo_der = 2*padre+2;
+		size_t hijo_max;
+		if (hijo_der == tam) { // si no tiene hijo derecho
+			hijo_max = hijo_izq;
+		} else {
+			hijo_max = max(elementos, hijo_izq, hijo_der, cmp);
+		}
+		if (cmp(elementos[padre], elementos[hijo_max]) < 0) {
+			swap(&elementos[padre], &elementos[hijo_max]);
+		}
+		heap_downheap(elementos, tam, hijo_max, cmp);
+	}
+}
 
 /* Elimina el elemento con máxima prioridad, y lo devuelve.
  * Si el heap esta vacío, devuelve NULL.
@@ -175,10 +197,6 @@ void *heap_desencolar(heap_t *heap) {
 	if (heap_esta_vacio(heap)) {
 		return NULL;
 	}
-	for (size_t i = 0; i < heap->cantidad; i++) {
-		printf("Elemento %lu es %i\n",i, *(int*)heap->elementos[i] );
-	}
-
 	swap(&heap->elementos[heap->cantidad-1], &heap->elementos[0]);
 	void *aux = heap->elementos[heap->cantidad-1];
 	heap->elementos[heap->cantidad-1] = NULL;
@@ -188,9 +206,6 @@ void *heap_desencolar(heap_t *heap) {
 		if(!heap_redimensionar(heap, heap->capacidad/2)) {
 			return NULL;
 		}
-	}
-	for (size_t i = 0; i < heap->cantidad; i++) {
-		printf("Nuevo Elemento %lu es %i\n",i, *(int*)heap->elementos[i] );
 	}
 
 	return aux;
