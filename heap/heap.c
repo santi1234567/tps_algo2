@@ -6,20 +6,31 @@
 #define TAM_INICIAL 21
 
 struct heap {
-    void *elementos[];
+    void **elementos;
     size_t cantidad;
     size_t capacidad;
-	cmp_func_t *cmp;
+	cmp_func_t cmp;
 };
 
-static void swap(void *x, void *y) {
-	void *aux = x;
-	x = y;
-	y = aux;
+static void swap(void **x, void **y) {
+	void *aux = *x;
+	*x = *y;
+	*y = aux;
 }
 
-static size_t min(const void *elementos, size_t pos_x, size_t pos_y, cmp_func_t cmp) {
- 	return (cmp(elementos[pos_x], elementos[pos_x]) > 0) ? pos_y : pos_x;
+static void heap_upheap(void *elementos[], size_t hijo, cmp_func_t cmp);
+static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp);
+static bool heap_redimensionar(heap_t *heap, size_t nueva_capacidad);
+
+
+static size_t max(void *elementos[], size_t pos_x, size_t pos_y, cmp_func_t cmp) {
+ 	return (cmp(elementos[pos_x], elementos[pos_y]) < 0) ? pos_y : pos_x;
+}
+
+static void heapify(void *elementos[], size_t cant, cmp_func_t cmp) {
+	for (size_t i = 0; i < cant; i++) {
+		heap_downheap(elementos, cant, cant-i-1, cmp);
+	}
 }
 
 /* Función de heapsort genérica. Esta función ordena mediante heap_sort
@@ -27,7 +38,13 @@ static size_t min(const void *elementos, size_t pos_x, size_t pos_y, cmp_func_t 
  * le pase una función de comparación. Modifica el arreglo "in-place".
  * Nótese que esta función NO es formalmente parte del TAD Heap.
  */
-void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp);
+void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp) {
+	heapify(elementos, cant, cmp);
+	for (size_t i = 0; i < cant; i++) {
+		swap(elementos[0], elementos[cant-i-1]);
+		heap_downheap(elementos, cant-i, 0, cmp);
+	}
+}
 
 /* Crea un heap. Recibe como único parámetro la función de comparación a
  * utilizar. Devuelve un puntero al heap, el cual debe ser destruido con
@@ -35,15 +52,16 @@ void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp);
  */
 heap_t *heap_crear(cmp_func_t cmp) {
 	heap_t *heap = malloc(sizeof(heap_t));
-	if (!heal) {
+	if (!heap) {
 		return NULL;
 	}
 
-	elementos = malloc(sizeof(void*)*TAM_INICIAL);
+	void **elementos = malloc(sizeof(void*)*TAM_INICIAL);
 	if (!elementos) {
 		free(heap);
 		return NULL;
 	}
+	heap->elementos = elementos;
 	heap->cantidad = 0;
 	heap->capacidad = TAM_INICIAL;
 	heap->cmp = cmp;
@@ -58,61 +76,50 @@ heap_t *heap_crear(cmp_func_t cmp) {
  * Excepto por la complejidad, es equivalente a crear un heap vacío y encolar
  * los valores de uno en uno
 */
+
 heap_t *heap_crear_arr(void *arreglo[], size_t n, cmp_func_t cmp) {
 	heap_t *heap = heap_crear(cmp);
-	if (!heal) {
+	if (!heap) {
 		return NULL;
 	}
-	heap_sort(arreglo, n, cmp);
+	heapify(arreglo, n, cmp);
 	for (size_t i = 0; i < n; i++) {
 		if (!heap_encolar(heap, arreglo[i])) {
-			heap_destruir(heap);
+			heap_destruir(heap, NULL);
 			return NULL;
 		}
 	}
 	return heap;
 }
 
-/* Elimina el heap, llamando a la función dada para cada elemento del mismo.
- * El puntero a la función puede ser NULL, en cuyo caso no se llamará.
- * Post: se llamó a la función indicada con cada elemento del heap. El heap
- * dejó de ser válido. */
 void heap_destruir(heap_t *heap, void (*destruir_elemento)(void *e)) {
 	if (destruir_elemento) {
 		for (size_t i = 0; i < heap->cantidad; i++) {
 			destruir_elemento(heap->elementos[i]);
 		}
 	}
+	free(heap->elementos);
 	free(heap);
 }
 
-/* Devuelve la cantidad de elementos que hay en el heap. */
 size_t heap_cantidad(const heap_t *heap) {
 	return heap->cantidad;
 }
 
-/* Devuelve true si la cantidad de elementos que hay en el heap es 0, false en
- * caso contrario. */
 bool heap_esta_vacio(const heap_t *heap) {
 	return !(heap->cantidad);
 }
 
-void heap_upheap(void *elementos[], size_t hijo, cmp_func_t cmp){
-	if (hijo == 0) { // caso base de primer elemento
-		return;
-	}
-	size_t padre = (hijo-1)/2;
-	if (cmp(elementos[hijo], elementos[padre]) > 0) {
-		swap(elementos[padre], elementos[hijo]);
-		return heap_upheap(elementos, padre, cmp);
+static void heap_upheap(void *elementos[], size_t hijo, cmp_func_t cmp){
+	if (hijo != 0) { // caso base de primer elemento
+		size_t padre = (hijo-1)/2;
+		if (cmp(elementos[hijo], elementos[padre]) > 0) {
+			swap(&elementos[padre], &elementos[hijo]);
+			heap_upheap(elementos, padre, cmp);
+		}
 	}
 }
 
-/* Agrega un elemento al heap.
- * Devuelve true si fue una operación exitosa, o false en caso de error.
- * Pre: el heap fue creado.
- * Post: se agregó un nuevo elemento al heap.
- */
 bool heap_encolar(heap_t *heap, void *elem) {
 	if (heap->cantidad == heap->capacidad) {
 		if(!heap_redimensionar(heap, heap->capacidad*2)) {
@@ -121,6 +128,7 @@ bool heap_encolar(heap_t *heap, void *elem) {
 	}
 	heap->elementos[heap->cantidad] = elem;
 	heap->cantidad++;
+
 	heap_upheap(heap->elementos, heap->cantidad-1, heap->cmp);
 	return true;
 }
@@ -130,20 +138,31 @@ bool heap_encolar(heap_t *heap, void *elem) {
  * Pre: el heap fue creado.
  */
 void *heap_ver_max(const heap_t *heap) {
-	return heap->elementos[0];
+	return (heap->cantidad>0) ? heap->elementos[0] : NULL;
 }
 
 
 
-void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
-	if (2*padre+1 > tam) { //caso base para las hojas
-		return;
+static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
+	printf("Pos Padre es %lu\n",padre );
+	if (2*padre+1 < tam) { //caso base para las hojas
+		size_t hijo_izq = 2*padre+1;
+		size_t hijo_der = 2*padre+2;
+		printf("Pos hijo izq es %lu, Pos hijo der es %lu, cantidad es %lu\n",hijo_izq, hijo_der, tam );
+		size_t hijo_max;
+		if (hijo_der == tam) { // si no tiene hijo derecho
+			hijo_max = hijo_izq;
+		} else {
+			hijo_max = max(elementos, hijo_izq, hijo_der, cmp);
+		}
+		printf("Padre es %i, Hijo max es %i\n", *(int *)elementos[padre],*(int *)elementos[hijo_max] );
+		if (cmp(elementos[padre], elementos[hijo_max]) < 0) { 
+			swap(&elementos[padre], &elementos[hijo_max]);
+		}
+		printf("Nuevo Padre es %i, Nuevo Hijo max es %i\n", *(int *)elementos[padre],*(int *)elementos[hijo_max] );
+
+		heap_downheap(elementos, tam, hijo_max, cmp);
 	}
-	size_t hijo_izq = 2*padre+1;
-	size_t hijo_der = 2*padre+2;
-	size_t hijo_min = min(elementos, hijo_izq, hijo_der, cmp);
-	swap(elementos[padre], elementos[hijo_min]);
-	return heap_downheap(elementos, tam, hijo_min, cmp);
 }
 
 
@@ -156,7 +175,11 @@ void *heap_desencolar(heap_t *heap) {
 	if (heap_esta_vacio(heap)) {
 		return NULL;
 	}
-	swap(heap->elementos[heap->cantidad-1], heap->elementos[0]);
+	for (size_t i = 0; i < heap->cantidad; i++) {
+		printf("Elemento %lu es %i\n",i, *(int*)heap->elementos[i] );
+	}
+
+	swap(&heap->elementos[heap->cantidad-1], &heap->elementos[0]);
 	void *aux = heap->elementos[heap->cantidad-1];
 	heap->elementos[heap->cantidad-1] = NULL;
 	heap->cantidad--;
@@ -166,6 +189,10 @@ void *heap_desencolar(heap_t *heap) {
 			return NULL;
 		}
 	}
+	for (size_t i = 0; i < heap->cantidad; i++) {
+		printf("Nuevo Elemento %lu es %i\n",i, *(int*)heap->elementos[i] );
+	}
+
 	return aux;
 }
 
