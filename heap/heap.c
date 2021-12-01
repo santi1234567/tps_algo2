@@ -26,17 +26,7 @@ static bool heap_redimensionar(heap_t *heap, size_t nueva_capacidad);
 static size_t max(void *elementos[], size_t pos_x, size_t pos_y, cmp_func_t cmp) {
  	return (cmp(elementos[pos_x], elementos[pos_y]) < 0) ? pos_y : pos_x;
 }
-/*
-static bool heap_es_heap(void *elementos[], size_t cant, cmp_func_t cmp) {
-	bool ok;
-	for (size_t i = cant-1; i > 0; i--) {
-		ok = cmp(elementos[i], elementos[(i-1)/2]) <= 0;
-		if (!ok) {
-			return false;
-		}
-	}
-	return true;
-}*/
+
 
 static void heapify(void *elementos[], size_t cant, cmp_func_t cmp) {
 	for (size_t i = 0; i < cant; i++) {
@@ -44,11 +34,6 @@ static void heapify(void *elementos[], size_t cant, cmp_func_t cmp) {
 	}
 }
 
-/* Función de heapsort genérica. Esta función ordena mediante heap_sort
- * un arreglo de punteros opacos, para lo cual requiere que se
- * le pase una función de comparación. Modifica el arreglo "in-place".
- * Nótese que esta función NO es formalmente parte del TAD Heap.
- */
 void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp) {
 	heapify(elementos, cant, cmp);
 	for (size_t i = 0; i < cant; i++) {
@@ -57,10 +42,7 @@ void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp) {
 	}
 }
 
-/* Crea un heap. Recibe como único parámetro la función de comparación a
- * utilizar. Devuelve un puntero al heap, el cual debe ser destruido con
- * heap_destruir().
- */
+
 heap_t *heap_crear(cmp_func_t cmp) {
 	heap_t *heap = malloc(sizeof(heap_t));
 	if (!heap) {
@@ -79,27 +61,24 @@ heap_t *heap_crear(cmp_func_t cmp) {
 	return heap;
 }
 
-/*
- * Constructor alternativo del heap. Además de la función de comparación,
- * recibe un arreglo de valores con que inicializar el heap. Complejidad
- * O(n).
- *
- * Excepto por la complejidad, es equivalente a crear un heap vacío y encolar
- * los valores de uno en uno
-*/
 
 heap_t *heap_crear_arr(void *arreglo[], size_t n, cmp_func_t cmp) {
 	heap_t *heap = heap_crear(cmp);
+	void **elementos = malloc(sizeof(void*)*n);
+	for (size_t i = 0; i < n; i++) {
+		elementos[i] = arreglo[i];
+	}
 	if (!heap) {
 		return NULL;
 	}
-	heapify(arreglo, n, cmp);
+	heapify(elementos, n, cmp);
 	for (size_t i = 0; i < n; i++) {
-		if (!heap_encolar(heap, arreglo[i])) {
+		if (!heap_encolar(heap, elementos[i])) {
 			heap_destruir(heap, NULL);
 			return NULL;
 		}
 	}
+	free(elementos);
 	return heap;
 }
 
@@ -144,15 +123,10 @@ bool heap_encolar(heap_t *heap, void *elem) {
 	return true;
 }
 
-/* Devuelve el elemento con máxima prioridad. Si el heap esta vacío, devuelve
- * NULL.
- * Pre: el heap fue creado.
- */
 void *heap_ver_max(const heap_t *heap) {
 	return (heap->cantidad>0) ? heap->elementos[0] : NULL;
 }
 
-/*
 
 static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
 	if (2*padre+1 < tam) { //caso base para las hojas
@@ -170,29 +144,7 @@ static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_
 		heap_downheap(elementos, tam, hijo_max, cmp);
 	}
 }
-*/
-static void heap_downheap(void *elementos[], size_t tam, size_t padre, cmp_func_t cmp){
-	if (2*padre+1 < tam) { //caso base para las hojas
-		size_t hijo_izq = 2*padre+1;
-		size_t hijo_der = 2*padre+2;
-		size_t hijo_max;
-		if (hijo_der == tam) { // si no tiene hijo derecho
-			hijo_max = hijo_izq;
-		} else {
-			hijo_max = max(elementos, hijo_izq, hijo_der, cmp);
-		}
-		if (cmp(elementos[padre], elementos[hijo_max]) < 0) {
-			swap(&elementos[padre], &elementos[hijo_max]);
-		}
-		heap_downheap(elementos, tam, hijo_max, cmp);
-	}
-}
 
-/* Elimina el elemento con máxima prioridad, y lo devuelve.
- * Si el heap esta vacío, devuelve NULL.
- * Pre: el heap fue creado.
- * Post: el elemento desencolado ya no se encuentra en el heap.
- */
 void *heap_desencolar(heap_t *heap) {
 	if (heap_esta_vacio(heap)) {
 		return NULL;
