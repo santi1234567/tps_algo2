@@ -13,6 +13,8 @@
 #include <unistd.h>  // For ssize_t in Linux.
 #include <time.h>
 
+#define LARGO_SUFICIENTE_PARA_CLAVE_NUM 11
+
 /* ******************************************************************
  *                        PRUEBAS UNITARIAS
  * *****************************************************************/
@@ -209,11 +211,11 @@ static void prueba_abb_valor_null()
     abb_destruir(abb);
 }
 
-static void prueba_abb_volumen(size_t largo, bool debug)
+static void prueba_abb_volumen(size_t largo)
 {
 	puts("\nINICIO PRUEBAS VOLUMEN");
     abb_t* abb = abb_crear(strcmp, free);
-    const size_t largo_clave = 20;
+    const size_t largo_clave = LARGO_SUFICIENTE_PARA_CLAVE_NUM;
     char (*claves)[largo_clave] = malloc(largo * largo_clave);
 
     unsigned* valores[largo];
@@ -227,8 +229,8 @@ static void prueba_abb_volumen(size_t largo, bool debug)
         if (!ok) break;
     }
 
-    if (debug) print_test("Prueba abb almacenar muchos elementos", ok);
-    if (debug) print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
+    print_test("Prueba abb almacenar muchos elementos", ok);
+    print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
 
     for (size_t i = 0; i < largo; i++) {
         ok = abb_pertenece(abb, claves[i]);
@@ -237,16 +239,16 @@ static void prueba_abb_volumen(size_t largo, bool debug)
         if (!ok) break;
     }
 
-    if (debug) print_test("Prueba abb pertenece y obtener muchos elementos", ok);
-    if (debug) print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
+    print_test("Prueba abb pertenece y obtener muchos elementos", ok);
+    print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
 
     for (size_t i = 0; i < largo; i++) {
         ok = abb_borrar(abb, claves[i]) == valores[i];
         if (!ok) break;
     }
 
-    if (debug) print_test("Prueba abb borrar muchos elementos", ok);
-    if (debug) print_test("Prueba abb la cantidad de elementos es 0", abb_cantidad(abb) == 0);
+    print_test("Prueba abb borrar muchos elementos", ok);
+    print_test("Prueba abb la cantidad de elementos es 0", abb_cantidad(abb) == 0);
 
     abb_destruir(abb);
     abb = abb_crear(strcmp, free);
@@ -324,7 +326,7 @@ static void prueba_abb_iterar_volumen(size_t largo)
 
     abb_t* abb = abb_crear(strcmp, NULL);
 
-    const size_t largo_clave = 20;
+    const size_t largo_clave = LARGO_SUFICIENTE_PARA_CLAVE_NUM;
     char (*claves)[largo_clave] = malloc(largo * largo_clave);
 
     size_t valores[largo];
@@ -399,7 +401,7 @@ void pruebas_abb_estudiante()
     prueba_abb_borrar();
     prueba_abb_clave_vacia();
     prueba_abb_valor_null();
-    prueba_abb_volumen(1000, true);
+    prueba_abb_volumen(1000);
     prueba_abb_iterar();
     prueba_abb_iterar_volumen(1000);
 }

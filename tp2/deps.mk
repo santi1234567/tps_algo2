@@ -1,0 +1,1 @@
+algogram: algogram.o flujo.o usuario.o post.o hash.o heap.o abb.o pila.o lista.o
