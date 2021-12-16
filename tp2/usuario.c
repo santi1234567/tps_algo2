@@ -29,9 +29,11 @@ static void usuario_post_destruir(void *usuario_post) {
 // x e y son dos posts con sus respectivas prioridades para el usuario. 
 // (-1) convierte heap de maximos en heap de minimos
 static int prioridad_cmp(const void *x, const void *y) {
-    int prioridad = (-1)*(((usuario_post_t*)x)->prioridad - ((usuario_post_t*)y)->prioridad);
+    usuario_post_t* usuario1 = (usuario_post_t*) x;
+    usuario_post_t* usuario2 = (usuario_post_t*) y;
+    int prioridad = (-1)*(usuario1->prioridad - usuario2->prioridad);
     if (prioridad == 0)
-        return (-1)*(int)(post_id(((usuario_post_t*)x)->post) - post_id(((usuario_post_t*)y)->post));
+        return (-1)*(int)(post_id(usuario1->post) - post_id(usuario2->post));
     else return prioridad;
 }
 

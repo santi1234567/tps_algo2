@@ -1,4 +1,4 @@
-#include "flujo.h"
+#include "operaciones.h"
 #include "post.h"
 
 #define LARGO_SUFICIENTE_PARA_ID_INT 11
@@ -21,12 +21,24 @@ struct estado {
     hash_t *usuarios;
 };
 
+static char *leer_linea() {
+    char *linea = NULL;
+    size_t buffsize = 0;
+    ssize_t leidos = getline(&linea, &buffsize, stdin);
+    linea[leidos-1] = '\0';
+    return linea;
+}
+
 estado_t *estado_crear(hash_t *usuarios) {
     estado_t *estado = malloc(sizeof(estado_t));
     if (!estado) return NULL;
     estado->login = false;
     estado->logueado = NULL;
     estado->posts = hash_crear(post_destruir);
+    if (!estado->posts) {
+        free(estado);
+        return NULL;
+    }
     estado->cant_posts = 0;
     estado->usuarios = usuarios;
     return estado;
@@ -40,22 +52,34 @@ void estado_destruir(estado_t *estado) {
 estado_t *iniciar_programa(FILE *archivo_usuarios) {
     size_t bufsize = 0;
     char *buffer = NULL;
-	hash_t *usuarios = hash_crear(usuario_destruir);
+    hash_t *usuarios = hash_crear(usuario_destruir);
+    if (!usuarios) 
+        return NULL;
     estado_t *estado = estado_crear(usuarios);
-	
+    if (!estado) {
+        hash_destruir(usuarios);
+        return NULL;
+    }
+        
     ssize_t leidos;
     int linea = 0;
-	while ((leidos = getline(&buffer, &bufsize, archivo_usuarios)) != -1) {
+    while ((leidos = getline(&buffer, &bufsize, archivo_usuarios)) != -1) {
         buffer[leidos-1] = '\0';
         usuario_t *usuario = usuario_crear(buffer, linea);
-		    if (!hash_guardar(usuarios, buffer, usuario)) {
-			      hash_destruir(usuarios);
-                  estado_destruir(estado);
-                  free(buffer);
-                  return NULL;
-		    }
+        if (!usuario) {
+            hash_destruir(usuarios);
+            estado_destruir(estado);
+            free(buffer);
+            return NULL;
+        }
+        if (!hash_guardar(usuarios, buffer, usuario)) {
+            hash_destruir(usuarios);
+            estado_destruir(estado);
+            free(buffer);
+            return NULL;
+        }
         linea ++;
-	}
+    }
 
     estado_agregar_usuarios(estado, usuarios);
     free(buffer);
@@ -83,10 +107,7 @@ hash_t *estado_usuarios(estado_t *estado) {
 }
 
 void login(estado_t *estado) {    
-    char *buffer = NULL;
-    size_t bufsize= 0;
-    ssize_t leidos = getline(&buffer, &bufsize, stdin);
-    buffer[leidos-1] = '\0';
+    char *buffer = leer_linea();
     if(estado_login(estado)) {
         fprintf(stdout, "%s\n", MSG_ERROR_LOGGED);
         free(buffer);
@@ -144,12 +165,9 @@ static bool publicar_(estado_t *estado, usuario_t *autor, char *contenido, size_
 
 void publicar(estado_t *estado) {
     usuario_t *autor = estado_logueado(estado);
-    char *buffer = NULL;
-    size_t bufsize = 0;
-    if(getline(&buffer, &bufsize, stdin) == -1) {
-        free(buffer);
+    char *buffer = leer_linea();
+    if (!buffer)
         return;
-    }
     if (!estado_login(estado)){
         fprintf(stdout, "%s\n", MSG_ERROR_NOT_LOGGED);
         free(buffer);
@@ -172,20 +190,14 @@ void ver_siguiente_feed(estado_t *estado) {
     }
     usuario_t *usuario = estado->logueado;
     post_t *post = usuario_ver_siguiente_post(usuario);
-    fprintf(stdout, "Post ID %zd\n%s dijo: %sLikes: %zd\n", post_id(post), post_ver_autor(post), post_ver_contenido(post), post_cant_likes(post));
+    fprintf(stdout, "Post ID %zd\n%s dijo: %s\nLikes: %zd\n", post_id(post), post_ver_autor(post), post_ver_contenido(post), post_cant_likes(post));
 }
 
 static post_t *obtener_post(estado_t *estado) {
-    char *id = NULL;
-    size_t buffsize = 0;
-    ssize_t leidos = getline(&id, &buffsize, stdin);
-    id[leidos-1] = '\0';
+    char *id = leer_linea();
     post_t *post = hash_obtener(estado->posts, id);
-    if (!post){
-        free(id);
-        return NULL;
-    }
     free(id);
+    if (!post) return NULL;
     return post;
 }
 
