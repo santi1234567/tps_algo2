@@ -1,12 +1,14 @@
+#!/usr/bin/python3
 from grafo import Grafo
 import input
 import sys
 import biblioFunciones
 
 def main(argv):
-	operaciones = {'rango': biblioFunciones.rango, 'camino': biblioFunciones.camino, 'diametro': biblioFunciones.diametro, 'navegacion': biblioFunciones.navegacion, 'lectura': biblioFunciones.lectura, 'clustering': biblioFunciones.clustering, 'comunidades': biblioFunciones.comunidades, 'conectados': biblioFunciones.conectividad, 'mas_importantes': biblioFunciones.mas_importantes}
+	operaciones = {'rango': biblioFunciones.rango, 'camino': biblioFunciones.camino, 'diametro': biblioFunciones.diametro, 'navegacion': biblioFunciones.navegacion, 'lectura': biblioFunciones.lectura, 'clustering': biblioFunciones.clustering, 'comunidad': biblioFunciones.comunidades, 'conectados': biblioFunciones.conectividad, 'mas_importantes': biblioFunciones.mas_importantes, 'ciclo': biblioFunciones.ciclo}
 	def call_func(func, params):
-		operaciones[func](*params) # *params is the magic.
+		return operaciones[func](*params)
+
 	if(len(sys.argv) != 2):
 		print("Error de argumentos")
 
@@ -15,6 +17,7 @@ def main(argv):
 	if not paginas:
 		print("Error en nombre de archivo")
 		exit()
+
 	for line in sys.stdin:
 		palabras = line.rstrip().split(" ", 1)
 		argumentos = [paginas]

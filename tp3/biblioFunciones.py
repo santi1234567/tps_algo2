@@ -1,6 +1,5 @@
 from grafo import Grafo
 from collections import deque
-import numpy as np
 import random
 import heapq
 from pila import Pila
@@ -14,29 +13,32 @@ Lectura a las 2 a.m. (★★)
 Coeficiente de Clustering (★★)
 Comunidades (★★)
 Conectividad (★★)
+Artículos más importantes (★★★)
+Ciclo de n artículos (★★★)
 ---------------------------------
-Total 12 (★★★★★★★★★★★★)
+Total 18 (★★★★★★★★★★★★★★★★★★)
 """
 cfc = {}
 
 def listar_operaciones():
-	print("camino\nconectados\nlectura\ndiametro\nrango\ncomunidad\nnavegación\nclustering\nmas_importantes")
+	print("lectura\nrango\ncomunidad\nnavegacion\nclustering\nmas_importantes\nconectados\nciclo\ndiametro\ncamino")
 
 def imprimir_recorrido(padres, ultimo, costo, imprimir_costo):
-    contador = costo + 1
-    lista = []
-    actual = ultimo
-    while actual and contador:
-        lista.append(actual)
-        actual = padres[actual]
-        contador -= 1
-    print(lista.pop(), end="")
-    while lista:
-        print(" -> ", lista.pop(), end="")
-    print()
-    if imprimir_costo:
-        print("Costo: ", costo)
-
+	contador = costo + 1
+	lista = []
+	actual = ultimo
+	while actual and contador:
+		lista.append(actual)
+		actual = padres[actual]
+		contador -= 1
+	aux = lista.copy()
+	print(lista.pop(), end="")
+	while lista:
+		print(" ->", lista.pop(), end="")
+	print()
+	if imprimir_costo:
+		print("Costo: ", costo)
+	return aux
 
 """
 Todos en Rango (★)
@@ -58,26 +60,26 @@ Salida:
 
 
 def bfs_n(grafo, origen, n):
-    contador = 0
-    visitados = set()
-    orden = {}
-    orden[origen] = 0
-    visitados.add(origen)
-    q = deque()
-    q.append(origen)
-    while q:
-        v = q.popleft()
-        for w in grafo.adyacentes(v):
-            if w not in visitados:
-                orden[w] = orden[v] + 1
-                if orden[w] == n:
-                    contador += 1
-                else:
-                    if orden[w] > n:
-                        return contador
-                visitados.add(w)
-                q.append(w)
-    return contador
+	contador = 0
+	visitados = set()
+	orden = {}
+	orden[origen] = 0
+	visitados.add(origen)
+	q = deque()
+	q.append(origen)
+	while q:
+		v = q.popleft()
+		for w in grafo.adyacentes(v):
+			if w not in visitados:
+				orden[w] = orden[v] + 1
+				if orden[w] == n:
+					contador += 1
+				else:
+					if orden[w] > n:
+						return contador
+				visitados.add(w)
+				q.append(w)
+	return contador
 
 
 def rango(grafo, args):
@@ -109,35 +111,41 @@ Salida:
 
 
 def camino(grafo, args):
-    origen = args[0]
-    destino = args[1]
-    padre, orden = bfs_destino(grafo, origen, destino)
-    if not padre:
-        print("No se encontró recorrido")
-        return
-    imprimir_recorrido(padre, destino, orden[destino], True)
+	origen = args[0]
+	destino = args[1]
+	if origen not in grafo.obtenerVertices():
+		print("Vértice  " + origen + " no está en el grafo")
+		return "Vértice  " + origen + " no está en el grafo"
+	if destino not in grafo.obtenerVertices():
+		print("Vértice  " + destino + " no está en el grafo")
+		return "Vértice  " + origen + " no está en el grafo"
+	padre, orden = bfs_destino(grafo, origen, destino)
+	if not padre:
+		print("No se encontro recorrido")
+		return None
+	return imprimir_recorrido(padre, destino, orden[destino], True)[::-1]
 
 
 def bfs_destino(grafo, origen, destino):
-    visitados = set()
-    padres = {}
-    orden = {}
-    padres[origen] = None
-    orden[origen] = 0
-    visitados.add(origen)
-    q = deque()
-    q.append(origen)
-    while q:
-        v = q.popleft()
-        for w in grafo.adyacentes(v):
-            if w not in visitados:
-                padres[w] = v
-                orden[w] = orden[v] + 1
-                visitados.add(w)
-                q.append(w)
-                if w == destino:
-                    return padres, orden
-    return None, None
+	visitados = set()
+	padres = {}
+	orden = {}
+	padres[origen] = None
+	orden[origen] = 0
+	visitados.add(origen)
+	q = deque()
+	q.append(origen)
+	while q:
+		v = q.popleft()
+		for w in grafo.adyacentes(v):
+			if w not in visitados:
+				padres[w] = v
+				orden[w] = orden[v] + 1
+				visitados.add(w)
+				q.append(w)
+				if w == destino:
+					return padres, orden
+	return None, None
 
 
 """
@@ -149,48 +157,47 @@ Nota: Puede haber más de uno de estos, pero todos tendrán el mismo largo.
 Complejidad: Este comando debe ejecutar en O(P(P+L)).
 
 Ejemplo: Entrada:
-    diametro
+	diametro
 Salida:
-    Huésped (biología) -> Agente biológico patógeno -> Animalia -> Carlos Linneo -> Finlandia -> Unión Europea -> Robert Schuman -> Aristide Briand
-    Costo: 7
+	Huésped (biología) -> Agente biológico patógeno -> Animalia -> Carlos Linneo -> Finlandia -> Unión Europea -> Robert Schuman -> Aristide Briand
+	Costo: 7
 """
 
 
 def caminos_minimos(grafo, origen):
-    q = deque()
-    visitados = set()
-    distancia = {}
-    distancia[origen] = 0
-    visitados.add(origen)
-    padres = {}
-    padres[origen] = None
-    ultimo = None
-    q.append(origen)
-    while q:
-        v = q.popleft()
-        for w in grafo.adyacentes(v):
-            if w not in visitados:
-                padres[w] = v
-                distancia[w] = distancia[v] + 1
-                q.append(w)
-                visitados.add(w)
-        ultimo = v
-    return padres, distancia, ultimo
+	q = deque()
+	visitados = set()
+	distancia = {}
+	distancia[origen] = 0
+	visitados.add(origen)
+	padres = {}
+	padres[origen] = None
+	ultimo = None
+	q.append(origen)
+	while q:
+		v = q.popleft()
+		for w in grafo.adyacentes(v):
+			if w not in visitados:
+				padres[w] = v
+				distancia[w] = distancia[v] + 1
+				q.append(w)
+				visitados.add(w)
+		ultimo = v
+	return padres, distancia, ultimo
 
 
 def diametro(grafo):
-    max_min_dist = 0
-    padres_max = None
-    ult = None
-    for v in grafo.obtenerVertices():
-        padres, distancias, ultimo = caminos_minimos(grafo, v)
-        for w in distancias:
-            if distancias[w] > max_min_dist:
-                max_min_dist = distancias[w]
-                ult = ultimo
-                padres_max = padres
-    imprimir_recorrido(padres_max, ult, max_min_dist, True)
-    return max_min_dist
+	max_min_dist = 0
+	padres_max = None
+	ult = None
+	for v in grafo.obtenerVertices():
+		padres, distancias, ultimo = caminos_minimos(grafo, v)
+		for w in distancias:
+			if distancias[w] > max_min_dist:
+				max_min_dist = distancias[w]
+				ult = ultimo
+				padres_max = padres
+	return imprimir_recorrido(padres_max, ult, max_min_dist, True)[::-1]
 
 
 """
@@ -218,27 +225,26 @@ Salida:
 """
 
 
-def navegacion_primer_link(grafo, v, contador, padres):
-    if contador >= 20:
-        return padres, v, contador
-    if v == "Filosofía":
-        return padres, v
-    ady = grafo.adyacentes(v)
-    if len(ady) == 0:
-        return padres, v, contador
-    padres[ady[0]] = v
-    return navegacion_primer_link(grafo, ady[0], contador + 1, padres)
+def navegacion_primer_link(grafo, v, contador, recorrido):
+	if contador >= 20:
+		return recorrido, contador
+	if v == "Filosofía":
+		return recorrido, contador
+	ady = grafo.adyacentes(v)
+	if len(ady) == 0:
+		return recorrido, contador
+	recorrido.append(ady[0])
+	return navegacion_primer_link(grafo, ady[0], contador + 1, recorrido)
 
 
 def navegacion(grafo, args):
-    origen = args[0]
-    contador = 0
-    padres = {}
-    padres[origen] = None
-    padres, ultimo, contador = navegacion_primer_link(grafo, origen, contador, padres)
-    if padres:
-        imprimir_recorrido(padres, ultimo, contador, False)
-
+	origen = args[0]
+	contador = 0
+	recorrido = [origen]
+	recorrido, contador = navegacion_primer_link(grafo, origen, contador, recorrido)
+	imprimir = ' -> '.join([str(item) for item in recorrido])
+	print(imprimir)
+	return recorrido
 
 """
 Lectura a las 2 a.m. (★★)
@@ -261,33 +267,37 @@ y hay un link de página1 a página2, un orden válido es página2 y luego pági
 
 
 def lectura_(grafo, visitadas, actual, paginas, orden):
-    visitadas.append(actual)
-    for w in grafo.adyacentes(actual):
-        if w in paginas:
-            for i in grafo.adyacentes(w):
-                if i in visitadas:
-                    visitadas.remove(actual)
-                    return False
-            if not lectura_(grafo, visitadas, w, paginas, orden):
-                visitadas.remove(actual)
-                return False
-    if actual not in orden:
-        orden.append(actual)
-    visitadas.remove(actual)
-    return True
+	visitadas.append(actual)
+	for w in grafo.adyacentes(actual):
+		if w in paginas:
+			for i in grafo.adyacentes(w):
+				if i in visitadas:
+					visitadas.remove(actual)
+					return False
+			if not lectura_(grafo, visitadas, w, paginas, orden):
+				visitadas.remove(actual)
+				return False
+	if actual not in orden:
+		orden.append(actual)
+	visitadas.remove(actual)
+	return True
 
 
 def lectura(grafo, args):
-    paginas = args
-    orden = deque()
-    visitadas = []
-    for v in paginas:
-        if not lectura_(grafo, visitadas, v, paginas, orden):
-            print("No existe forma de leer las paginas en orden")
-            return
-    while orden:
-        print(orden.popleft() + ", ", end="")
-    print()
+	paginas = args
+	orden = deque()
+	visitadas = []
+	lista_lectura = []
+	for v in paginas:
+		if not lectura_(grafo, visitadas, v, paginas, orden):
+			print("No existe forma de leer las paginas en orden")
+			return "No existe forma de leer las paginas en orden"
+	while orden:
+		pagina = orden.popleft()
+		lista_lectura.append(pagina)
+	imprimir = ', '.join([str(item) for item in lista_lectura])
+	print(imprimir)
+	return lista_lectura
 
 #   otoño, Himalaya, universo, Dios, Guerra, árbol, Hockey sobre hielo, Japón, Roma
 # deque(['Hockey sobre hielo', 'otoño', 'árbol', 'universo', 'Dios', 'Guerra', 'Japón', 'Roma', 'Himalaya'])
@@ -302,37 +312,37 @@ Cuántos de mis adyacentes son adyacentes entre sí.
 
 
 def clustering_general(grafo, pagina):
-    adyacentes = grafo.adyacentes(pagina)
-    grado_salida = len(adyacentes)
-    if grado_salida < 2:
-        return 0.000
-    aristas = 0
-    for v in adyacentes:
-        for w in adyacentes:
-            if v != w:
-                if grafo.sonAdyacentes(v, w):
-                    aristas += 1
-    resultado = aristas / (grado_salida * (grado_salida - 1))
-    return resultado
+	adyacentes = grafo.adyacentes(pagina)
+	grado_salida = len(adyacentes)
+	if grado_salida < 2:
+		return 0.000
+	aristas = 0
+	for v in adyacentes:
+		for w in adyacentes:
+			if v != w:
+				if grafo.sonAdyacentes(v, w):
+					aristas += 1
+	resultado = aristas / (grado_salida * (grado_salida - 1))
+	return resultado
 
 
 def clustering(grafo, args=[]):
-    pagina = None
-    if len(args)>0:
-        pagina = args[0]
-    if not pagina or pagina not in grafo.obtenerVertices():
-        res = 0
-        contador = 0
-        for v in grafo.obtenerVertices():
-            res += clustering_general(grafo, v)
-            contador += 1
-        format_float = "{:.3f}".format(round(res / contador, 3))
-        print(format_float)
-        return round(res / contador, 3)
-    else:
-        format_float = "{:.3f}".format(round(clustering_general(grafo, pagina), 3))
-        print(format_float)
-        return round(clustering_general(grafo, pagina), 3)
+	pagina = None
+	if len(args)>0:
+		pagina = args[0]
+	if not pagina or pagina not in grafo.obtenerVertices():
+		res = 0
+		contador = 0
+		for v in grafo.obtenerVertices():
+			res += clustering_general(grafo, v)
+			contador += 1
+		format_float = "{:.3f}".format(round(res / contador, 3))
+		print(format_float)
+		return round(res / contador, 3)
+	else:
+		format_float = "{:.3f}".format(round(clustering_general(grafo, pagina), 3))
+		print(format_float)
+		return round(clustering_general(grafo, pagina), 3)
 
 
 """
@@ -352,45 +362,46 @@ A quién le interese este tema puede ver otro tipo de algoritmos, como por ejemp
 
 
 def comunidades(grafo, args):
-    origen = args[0]
-    labels = {}
-    entradas = {}
-    i = 0
-    for v in grafo.obtenerVertices():
-        entradas[v] = []
-        labels[v] = i
-        i = i + 1
-        for w in grafo.adyacentes(v):
-            if w in entradas:
-                entradas[w].append(v)
-            else:
-                entradas[w] = [v]
-    N_it = 2
-    for i in range(0, N_it):  # Recorro N_it iteraciones
-        print(i)
-        orden_vertices = grafo.obtenerVertices()
-        random.shuffle(orden_vertices)
-        for v in orden_vertices:  # Aplico label propagation por cada vertice
-            frecuencias = {}
-            max = None
-            for w in entradas[v]:
-                if labels[w] in frecuencias:
-                    frecuencias[labels[w]] += 1
-                else:
-                    frecuencias[labels[w]] = 1
-                if not max:
-                    max = labels[w]
-                else:
-                    if frecuencias[labels[w]] > frecuencias[max]:
-                        max = labels[w]
-            labels[v] = max  # Actualizo el label de v de acuerdo al label con más apariciones
+	origen = args[0]
+	labels = {}
+	entradas = {}
+	i = 0
+	for v in grafo.obtenerVertices():
+		entradas[v] = []
+		labels[v] = i
+		i = i + 1
+		for w in grafo.adyacentes(v):
+			if w in entradas:
+				entradas[w].append(v)
+			else:
+				entradas[w] = [v]
+	N_it = 6
+	for i in range(0, N_it-1):  # Recorro N_it iteraciones
+		orden_vertices = grafo.obtenerVertices()
+		random.shuffle(orden_vertices)
+		for v in orden_vertices:  # Aplico label propagation por cada vertice
+			frecuencias = {}
+			max = None
+			for w in entradas[v]:
+				if labels[w] in frecuencias:
+					frecuencias[labels[w]] += 1
+				else:
+					frecuencias[labels[w]] = 1
+				if not max:
+					max = labels[w]
+				else:
+					if frecuencias[labels[w]] > frecuencias[max]:
+						max = labels[w]
+			labels[v] = max  # Actualizo el label de v de acuerdo al label con más apariciones
 
-    lista = []
-    for v in grafo.obtenerVertices():
-        if labels[v] == labels[origen]:
-            lista.append(v)
-            print(v + ", ", end="")
-    print("\nLEN = ", len(lista))
+	comunidad = set()
+	for v in grafo.obtenerVertices():
+		if labels[v] == labels[origen]:
+			comunidad.add(v)
+	imprimir = ', '.join([str(item) for item in comunidad])
+	print(imprimir)
+	return comunidad
+	#print("\nLEN = ", len(lista))
 
 
 """
@@ -412,55 +423,64 @@ Es importante notar que la segunda consulta debería obtener un resultado en tie
 
 
 def bfs_contador(grafo, origen, conectados):
-    contador = 1    # Incluyo al origen
-    visitados = set()
-    visitados.add(origen)
-    q = deque()
-    q.append(origen)
-    while q:
-        v = q.popleft()
-        for w in grafo.adyacentes(v):
-            if w not in visitados:
-                visitados.add(w)
-                q.append(w)
-                if w in conectados:
-                    contador += 1
-    # O(V + E)
-    return contador
+	conectados_desde_origen = set()
+	conectados_desde_origen.add(origen)
+	visitados = set()
+	visitados.add(origen)
+	q = deque()
+	q.append(origen)
+	while q:
+		v = q.popleft()
+		for w in grafo.adyacentes(v):
+			if w not in visitados:
+				visitados.add(w)
+				q.append(w)
+				if w in conectados:
+					conectados_desde_origen.add(w)
+	# O(V + E)
+	return conectados_desde_origen
 
 
 def llegan_a_actual(actual, entradas, conectados, pila):
-    for w in entradas[actual]:
-        pila.apilar(w)
-    while not pila.estaVacia():
-        v = pila.desapilar()
-        for w in entradas[v]:
-            if w not in conectados:
-                conectados[w] = w
-                pila.apilar(w)
-    return conectados
+	for w in entradas[actual]:
+		pila.apilar(w)
+	while not pila.estaVacia():
+		v = pila.desapilar()
+		for w in entradas[v]:
+			if w not in conectados:
+				conectados.add(w)
+				pila.apilar(w)
+	return conectados
 
 
 def conectividad(grafo, args):
-    origen = args[0]
-    global cfc
-    if cfc and origen in cfc:
-            print(len(cfc))
-            return cfc
-    entradas = {}
-    for v in grafo.obtenerVertices():
-        for w in grafo.adyacentes(v):
-            if w in entradas:
-                entradas[w].append(v)
-            else:
-                entradas[w] = [v]
-    conectados = {}
-    pila = Pila()
-    llegan_a_actual(origen, entradas, conectados, pila)
-    contador = bfs_contador(grafo, origen, conectados)
-    print(contador)
-    cfc = conectados
-    return conectados
+	origen = args[0]
+	global cfc
+	if cfc and (origen in cfc):
+			imprimir = ', '.join([str(item) for item in cfc])
+			print(imprimir)
+			return cfc
+	entradas = {}
+	for v in grafo.obtenerVertices():
+		if v not in entradas:
+			entradas[v] = []
+		for w in grafo.adyacentes(v):
+			if w in entradas:
+				entradas[w].append(v)
+			else:
+				entradas[w] = [v]
+	if len(entradas[origen]) == 0:
+		conectados = set()
+		conectados.add(origen)
+	else:
+		conectados = set()
+		pila = Pila()
+		llegan_a_actual(origen, entradas, conectados, pila)
+	conectados_desde_origen = bfs_contador(grafo, origen, conectados)
+	imprimir = ', '.join([str(item) for item in conectados_desde_origen])
+	print(imprimir)
+	cfc = conectados_desde_origen
+	return conectados_desde_origen
 
 
 """
@@ -480,46 +500,100 @@ Argentina, Estados Unidos, Buenos Aires, España, Francia, Provincias de la Arge
 
 
 def mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas):
-    for v in grafo.obtenerVertices():
-        rank[v] = (1 - d)/largo
-    k_mas_importantes = []
-    for _ in range(N_iteraciones):
-        for v in grafo.obtenerVertices():
-            sumatoria = 0
-            for w in entradas[v]:
-                len_adyacentes = len(grafo.adyacentes(w))
-                if len_adyacentes == 0:
-                    len_adyacentes = 1
-                sumatoria += rank[w]/len_adyacentes
-            rank[v] = (1 - d)/largo + d * sumatoria
+	for v in grafo.obtenerVertices():
+		rank[v] = (1 - d)/largo
+	k_mas_importantes = []
+	for _ in range(N_iteraciones):
+		for v in grafo.obtenerVertices():
+			sumatoria = 0
+			if v not in entradas:
+				entradas[v] = []
+			for w in entradas[v]:
+				len_adyacentes = len(grafo.adyacentes(w))
+				if len_adyacentes == 0:
+					len_adyacentes = 1
+				sumatoria += rank[w]/len_adyacentes
+			rank[v] = (1 - d)/largo + d * sumatoria
 
-    contador = 0
-    for v in grafo.obtenerVertices():
-        if contador < k:
-            heapq.heappush(k_mas_importantes, (rank[v], v))
-            contador += 1
-        else:
-            if rank[v] > k_mas_importantes[0][0]:
-                heapq.heappushpop(k_mas_importantes, (rank[v], v))
-    listado_mas_importantes = []
-    while k_mas_importantes:
-        listado_mas_importantes.insert(0, heapq.heappop(k_mas_importantes)[1])
-    imprimir = ', '.join([str(item) for item in listado_mas_importantes])
-    print(imprimir)
-    return listado_mas_importantes
+	contador = 0
+	for v in grafo.obtenerVertices():
+		if contador < k:
+			heapq.heappush(k_mas_importantes, (rank[v], v))
+			contador += 1
+		else:
+			if rank[v] > k_mas_importantes[0][0]:
+				heapq.heappushpop(k_mas_importantes, (rank[v], v))
+	listado_mas_importantes = []
+	while k_mas_importantes:
+		listado_mas_importantes.insert(0, heapq.heappop(k_mas_importantes)[1])
+	imprimir = ', '.join([str(item) for item in listado_mas_importantes])
+	print(imprimir)
+	return listado_mas_importantes
 
 
 def mas_importantes(grafo, args):
-    k = int(args[0])
-    entradas = {}
-    for v in grafo.obtenerVertices():
-        for w in grafo.adyacentes(v):
-            if w in entradas:
-                entradas[w].append(v)
-            else:
-                entradas[w] = [v]
-    d = 0.85
-    N_iteraciones = 3
-    rank = {}
-    largo = grafo.cantidadVertices
-    return mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas)
+	k = int(args[0])
+	entradas = {}
+	for v in grafo.obtenerVertices():
+		for w in grafo.adyacentes(v):
+			if w in entradas:
+				entradas[w].append(v)
+			else:
+				entradas[w] = [v]
+	d = 0.85
+	N_iteraciones = 5
+	rank = {}
+	largo = grafo.cantidadVertices
+	return mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas)
+
+"""
+Ciclo de n artículos (★★★)
+Comando: ciclo.
+Parámetros: página y n.
+Utilidad: permite obtener un ciclo de largo n que comience en la página indicada.
+Complejidad: Este comando debe ejecutar en O(P**n), pero realizando una buena poda puede reducirse sustancialmente el tiempo de ejecución.
+Ejemplo: Entrada:
+  ciclo Jeremy Irons,4
+  ciclo Polonia,20
+
+Jeremy Irons -> The Silence of the Lambs (película) -> Dances with Wolves -> Premios Óscar -> Jeremy Irons
+
+Polonia -> Unión Europea Occidental -> Unión Europea -> Idioma italiano -> Florencia -> Cannes -> Festival de Cannes -> Biarritz -> Pirineos Atlánticos -> Pirineos -> Alpes -> Dolomitas ->
+  Marmolada -> Italia -> Pier Paolo Pasolini -> Roma -> Alfabeto fonético internacional -> Alfabeto Fonético Internacional -> Idioma ruso -> Moscú -> Polonia
+"""
+
+
+def ciclo_(grafo, origen, actual, contador, n, padres, visitados):
+	if contador == n and actual == origen:
+		recorrido = imprimir_recorrido(padres, actual, n, False)[::-1]
+		return recorrido[:1]
+	if contador >= n and actual != origen:
+		return None
+
+	for w in grafo.adyacentes(actual):
+		if w == origen and contador != n - 1:
+			continue
+		if w in visitados and w != origen:
+			continue
+		padres[w] = actual
+		visitados.add(w)
+		lista = ciclo_(grafo, origen, w, contador + 1, n, padres, visitados)
+		if lista:
+			return lista
+		visitados.remove(w)
+	return None
+
+
+def ciclo(grafo, args):
+	origen = args[0]
+	n = int(args[1])
+	padres = {}
+	visitados = set()
+	padres[origen] = None
+	contador = 0
+	lista = ciclo_(grafo, origen, origen, contador, n, padres, visitados)
+	if lista:
+		return lista
+	else:
+		print("No se encontro recorrido")
+		return None
