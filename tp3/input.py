@@ -4,12 +4,11 @@ import biblioFunciones
 import string
 import csv
 
-
+# Lee el archivo de nombre "filename" con formato tsv y crea un grafo dirigido a partir de este.
 def readinputdata(filename):
-	grafo = Grafo([], True)
+	grafo = Grafo(True, [])
 	fichero = open(filename, 'r', encoding='utf-8')
 	line = '0'
-	n = 0
 	while len(line[0]) > 0:
 		line = fichero.readline().split('\t')
 		largo = len(line)
@@ -19,7 +18,6 @@ def readinputdata(filename):
 			grafo.agregarVertice(vertice)
 			for i in range(1, largo):
 				grafo.agregarArista(vertice, line[i], 1)
-		n += 1
 	grafo.borrarVertice('')
 	fichero.close()
 	return grafo

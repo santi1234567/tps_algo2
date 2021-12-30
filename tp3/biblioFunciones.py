@@ -3,6 +3,7 @@ from collections import deque
 import random
 import heapq
 from pila import Pila
+from enum import Enum
 
 """
 Todos en Rango (★)
@@ -20,25 +21,27 @@ Total 18 (★★★★★★★★★★★★★★★★★★)
 """
 cfc = {}
 
-def listar_operaciones():
-	print("lectura\nrango\ncomunidad\nnavegacion\nclustering\nmas_importantes\nconectados\nciclo\ndiametro\ncamino")
+class tipo_devolucion(Enum):
+	LISTADO = 1
+	RECORRIDO = 2
+	VALOR = 3
 
-def imprimir_recorrido(padres, ultimo, costo, imprimir_costo):
-	contador = costo + 1
-	lista = []
+
+# Devuelve diccionario con las funciones de la Biblioteca. Como valor está la función y un enumerador que indica el tipo de dato que devuelve (valor numérico, recorrido o listado)
+def obtener_dict_funciones():
+	return {'rango': (rango, tipo_devolucion.VALOR), 'camino': (camino, tipo_devolucion.RECORRIDO), 'diametro': (diametro, tipo_devolucion.RECORRIDO), 'navegacion': (navegacion, tipo_devolucion.RECORRIDO), 'lectura': (lectura, tipo_devolucion.LISTADO), 'clustering': (clustering, tipo_devolucion.VALOR), 'comunidad': (comunidades, tipo_devolucion.LISTADO), 'conectados': (conectividad, tipo_devolucion.LISTADO), 'mas_importantes': (mas_importantes, tipo_devolucion.LISTADO), 'ciclo': (ciclo, tipo_devolucion.RECORRIDO)}
+
+# Recibe un diccionario de padres, el último elemento y un contador tope del recorrido y devuelve una lista con los vértices
+# ordenados desde el indicado por el tope hasta último
+def obtener_recorrido(padres, ultimo, tope_recorrido):
+	contador = tope_recorrido + 1
+	recorrido = []
 	actual = ultimo
 	while actual and contador:
-		lista.append(actual)
+		recorrido.append(actual)
 		actual = padres[actual]
 		contador -= 1
-	aux = lista.copy()
-	print(lista.pop(), end="")
-	while lista:
-		print(" ->", lista.pop(), end="")
-	print()
-	if imprimir_costo:
-		print("Costo: ", costo)
-	return aux
+	return recorrido
 
 """
 Todos en Rango (★)
@@ -59,8 +62,8 @@ Salida:
 """
 
 
-def bfs_n(grafo, origen, n):
-	contador = 0
+def bfs_a_distancia_n(grafo, origen, n):
+	paginas_a_distancia_n = 0
 	visitados = set()
 	orden = {}
 	orden[origen] = 0
@@ -73,23 +76,20 @@ def bfs_n(grafo, origen, n):
 			if w not in visitados:
 				orden[w] = orden[v] + 1
 				if orden[w] == n:
-					contador += 1
+					paginas_a_distancia_n += 1
 				else:
 					if orden[w] > n:
-						return contador
+						return paginas_a_distancia_n
 				visitados.add(w)
 				q.append(w)
-	return contador
+	return paginas_a_distancia_n
 
-
-def rango(grafo, args):
-	origen = args[0]
-	n = int(args[1])
+def rango(grafo, origen, n):
+	n = int(n)
 	if origen in grafo.obtenerVertices():
-		print(bfs_n(grafo, origen, n))
+		return (bfs_a_distancia_n(grafo, origen, n), None, None)
 	else:
-		print("No existe esa página")
-
+		return (None, "No existe esa página", None)
 
 """
 Camino más corto (★)
@@ -110,43 +110,15 @@ Salida:
 """
 
 
-def camino(grafo, args):
-	origen = args[0]
-	destino = args[1]
+def camino(grafo, origen, destino):
 	if origen not in grafo.obtenerVertices():
-		print("Vértice  " + origen + " no está en el grafo")
-		return "Vértice  " + origen + " no está en el grafo"
+		return (None, "Vértice  " + origen + " no está en el grafo", None)
 	if destino not in grafo.obtenerVertices():
-		print("Vértice  " + destino + " no está en el grafo")
-		return "Vértice  " + origen + " no está en el grafo"
-	padre, orden = bfs_destino(grafo, origen, destino)
-	if not padre:
-		print("No se encontro recorrido")
-		return None
-	return imprimir_recorrido(padre, destino, orden[destino], True)[::-1]
-
-
-def bfs_destino(grafo, origen, destino):
-	visitados = set()
-	padres = {}
-	orden = {}
-	padres[origen] = None
-	orden[origen] = 0
-	visitados.add(origen)
-	q = deque()
-	q.append(origen)
-	while q:
-		v = q.popleft()
-		for w in grafo.adyacentes(v):
-			if w not in visitados:
-				padres[w] = v
-				orden[w] = orden[v] + 1
-				visitados.add(w)
-				q.append(w)
-				if w == destino:
-					return padres, orden
-	return None, None
-
+		return (None, "Vértice  " + destino + " no está en el grafo", None)
+	padre, orden, ultimo = bfs(grafo, origen, destino)
+	if destino not in padre:
+		return (None, "No se encontro recorrido", None)
+	return (obtener_recorrido(padre, destino, orden[destino])[::-1], None, orden[destino])
 
 """
 Diametro (★)
@@ -164,7 +136,7 @@ Salida:
 """
 
 
-def caminos_minimos(grafo, origen):
+def bfs(grafo, origen, destino):
 	q = deque()
 	visitados = set()
 	distancia = {}
@@ -177,11 +149,13 @@ def caminos_minimos(grafo, origen):
 	while q:
 		v = q.popleft()
 		for w in grafo.adyacentes(v):
-			if w not in visitados:
+			if w not in visitados and w != v:
 				padres[w] = v
 				distancia[w] = distancia[v] + 1
 				q.append(w)
 				visitados.add(w)
+				if destino and w == destino:
+					return padres, distancia, ultimo
 		ultimo = v
 	return padres, distancia, ultimo
 
@@ -191,13 +165,13 @@ def diametro(grafo):
 	padres_max = None
 	ult = None
 	for v in grafo.obtenerVertices():
-		padres, distancias, ultimo = caminos_minimos(grafo, v)
+		padres, distancias, ultimo = bfs(grafo, v, None)
 		for w in distancias:
 			if distancias[w] > max_min_dist:
 				max_min_dist = distancias[w]
 				ult = ultimo
 				padres_max = padres
-	return imprimir_recorrido(padres_max, ult, max_min_dist, True)[::-1]
+	return (obtener_recorrido(padres_max, ult, max_min_dist)[::-1], None, max_min_dist)
 
 
 """
@@ -226,9 +200,7 @@ Salida:
 
 
 def navegacion_primer_link(grafo, v, contador, recorrido):
-	if contador >= 20:
-		return recorrido, contador
-	if v == "Filosofía":
+	if contador >= 20 or v == "Filosofía":
 		return recorrido, contador
 	ady = grafo.adyacentes(v)
 	if len(ady) == 0:
@@ -237,14 +209,11 @@ def navegacion_primer_link(grafo, v, contador, recorrido):
 	return navegacion_primer_link(grafo, ady[0], contador + 1, recorrido)
 
 
-def navegacion(grafo, args):
-	origen = args[0]
+def navegacion(grafo, origen):
 	contador = 0
 	recorrido = [origen]
 	recorrido, contador = navegacion_primer_link(grafo, origen, contador, recorrido)
-	imprimir = ' -> '.join([str(item) for item in recorrido])
-	print(imprimir)
-	return recorrido
+	return (recorrido, None, None)
 
 """
 Lectura a las 2 a.m. (★★)
@@ -283,24 +252,17 @@ def lectura_(grafo, visitadas, actual, paginas, orden):
 	return True
 
 
-def lectura(grafo, args):
-	paginas = args
+def lectura(grafo, *paginas):
 	orden = deque()
 	visitadas = []
 	lista_lectura = []
 	for v in paginas:
 		if not lectura_(grafo, visitadas, v, paginas, orden):
-			print("No existe forma de leer las paginas en orden")
-			return "No existe forma de leer las paginas en orden"
+			return (None, "No existe forma de leer las paginas en orden", None)
 	while orden:
 		pagina = orden.popleft()
 		lista_lectura.append(pagina)
-	imprimir = ', '.join([str(item) for item in lista_lectura])
-	print(imprimir)
-	return lista_lectura
-
-#   otoño, Himalaya, universo, Dios, Guerra, árbol, Hockey sobre hielo, Japón, Roma
-# deque(['Hockey sobre hielo', 'otoño', 'árbol', 'universo', 'Dios', 'Guerra', 'Japón', 'Roma', 'Himalaya'])
+	return (lista_lectura, None, None)
 
 
 """
@@ -314,35 +276,29 @@ Cuántos de mis adyacentes son adyacentes entre sí.
 def clustering_general(grafo, pagina):
 	adyacentes = grafo.adyacentes(pagina)
 	grado_salida = len(adyacentes)
+	if pagina in adyacentes:
+		grado_salida -= 1
 	if grado_salida < 2:
 		return 0.000
 	aristas = 0
 	for v in adyacentes:
 		for w in adyacentes:
-			if v != w:
-				if grafo.sonAdyacentes(v, w):
-					aristas += 1
+			if v != w and grafo.sonAdyacentes(v, w) and v != pagina and w != pagina:
+				aristas += 1
 	resultado = aristas / (grado_salida * (grado_salida - 1))
 	return resultado
 
 
-def clustering(grafo, args=[]):
-	pagina = None
-	if len(args)>0:
-		pagina = args[0]
+def clustering(grafo, pagina=None):
 	if not pagina or pagina not in grafo.obtenerVertices():
 		res = 0
 		contador = 0
 		for v in grafo.obtenerVertices():
 			res += clustering_general(grafo, v)
 			contador += 1
-		format_float = "{:.3f}".format(round(res / contador, 3))
-		print(format_float)
-		return round(res / contador, 3)
+		return (round(res / contador, 3), None, None)
 	else:
-		format_float = "{:.3f}".format(round(clustering_general(grafo, pagina), 3))
-		print(format_float)
-		return round(clustering_general(grafo, pagina), 3)
+		return round(clustering_general(grafo, pagina), 3), None, None
 
 
 """
@@ -361,8 +317,7 @@ A quién le interese este tema puede ver otro tipo de algoritmos, como por ejemp
 """
 
 
-def comunidades(grafo, args):
-	origen = args[0]
+def comunidades(grafo, origen):
 	labels = {}
 	entradas = {}
 	i = 0
@@ -371,10 +326,11 @@ def comunidades(grafo, args):
 		labels[v] = i
 		i = i + 1
 		for w in grafo.adyacentes(v):
-			if w in entradas:
-				entradas[w].append(v)
-			else:
-				entradas[w] = [v]
+			if w != v:
+				if w in entradas:
+					entradas[w].append(v)
+				else:
+					entradas[w] = [v]
 	N_it = 6
 	for i in range(0, N_it-1):  # Recorro N_it iteraciones
 		orden_vertices = grafo.obtenerVertices()
@@ -398,10 +354,7 @@ def comunidades(grafo, args):
 	for v in grafo.obtenerVertices():
 		if labels[v] == labels[origen]:
 			comunidad.add(v)
-	imprimir = ', '.join([str(item) for item in comunidad])
-	print(imprimir)
-	return comunidad
-	#print("\nLEN = ", len(lista))
+	return comunidad, None, None
 
 
 """
@@ -437,7 +390,6 @@ def bfs_contador(grafo, origen, conectados):
 				q.append(w)
 				if w in conectados:
 					conectados_desde_origen.add(w)
-	# O(V + E)
 	return conectados_desde_origen
 
 
@@ -453,13 +405,10 @@ def llegan_a_actual(actual, entradas, conectados, pila):
 	return conectados
 
 
-def conectividad(grafo, args):
-	origen = args[0]
+def conectividad(grafo, origen):
 	global cfc
 	if cfc and (origen in cfc):
-			imprimir = ', '.join([str(item) for item in cfc])
-			print(imprimir)
-			return cfc
+		return cfc, None, None
 	entradas = {}
 	for v in grafo.obtenerVertices():
 		if v not in entradas:
@@ -477,10 +426,8 @@ def conectividad(grafo, args):
 		pila = Pila()
 		llegan_a_actual(origen, entradas, conectados, pila)
 	conectados_desde_origen = bfs_contador(grafo, origen, conectados)
-	imprimir = ', '.join([str(item) for item in conectados_desde_origen])
-	print(imprimir)
 	cfc = conectados_desde_origen
-	return conectados_desde_origen
+	return conectados_desde_origen, None, None
 
 
 """
@@ -526,13 +473,11 @@ def mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas):
 	listado_mas_importantes = []
 	while k_mas_importantes:
 		listado_mas_importantes.insert(0, heapq.heappop(k_mas_importantes)[1])
-	imprimir = ', '.join([str(item) for item in listado_mas_importantes])
-	print(imprimir)
 	return listado_mas_importantes
 
 
-def mas_importantes(grafo, args):
-	k = int(args[0])
+def mas_importantes(grafo, k):
+	k = int(k)
 	entradas = {}
 	for v in grafo.obtenerVertices():
 		for w in grafo.adyacentes(v):
@@ -544,7 +489,7 @@ def mas_importantes(grafo, args):
 	N_iteraciones = 5
 	rank = {}
 	largo = grafo.cantidadVertices
-	return mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas)
+	return (mas_importantes_(grafo, k, d, rank, N_iteraciones, largo, entradas), None, None)
 
 """
 Ciclo de n artículos (★★★)
@@ -565,8 +510,8 @@ Polonia -> Unión Europea Occidental -> Unión Europea -> Idioma italiano -> Flo
 
 def ciclo_(grafo, origen, actual, contador, n, padres, visitados):
 	if contador == n and actual == origen:
-		recorrido = imprimir_recorrido(padres, actual, n, False)[::-1]
-		return recorrido[:1]
+		recorrido = obtener_recorrido(padres, actual, n)[::-1]
+		return recorrido
 	if contador >= n and actual != origen:
 		return None
 
@@ -584,16 +529,14 @@ def ciclo_(grafo, origen, actual, contador, n, padres, visitados):
 	return None
 
 
-def ciclo(grafo, args):
-	origen = args[0]
-	n = int(args[1])
+def ciclo(grafo, origen, n):
+	n = int(n)
 	padres = {}
 	visitados = set()
 	padres[origen] = None
 	contador = 0
-	lista = ciclo_(grafo, origen, origen, contador, n, padres, visitados)
-	if lista:
-		return lista
+	recorrido = ciclo_(grafo, origen, origen, contador, n, padres, visitados)
+	if recorrido:
+		return recorrido, None, None
 	else:
-		print("No se encontro recorrido")
-		return None
+		return None, "No se encontro recorrido", None
